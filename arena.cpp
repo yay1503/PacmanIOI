@@ -4,7 +4,6 @@
 #include <optional>
 
 int main() {
-    // 1. Define the Map (The Tile Grid)
     // '#' = Wall, '-' = Ghost Door, ' ' = Empty space
     std::vector<std::string> levelMap = {
         "############################",
@@ -40,12 +39,10 @@ int main() {
         "############################"
     };
 
-    // 2. Set up dimensions
-    const float tileSize = 20.0f; // Each block is 20x20 pixels
+    const float tileSize = 21.0f; 
     unsigned int mapWidth = levelMap[0].size();
     unsigned int mapHeight = levelMap.size();
 
-    // 3. Create the SFML 3.0 Window
     // We calculate window size based on our map size and tile size
     sf::RenderWindow window(sf::VideoMode({mapWidth * (unsigned int)tileSize, 
                                            mapHeight * (unsigned int)tileSize}), 
