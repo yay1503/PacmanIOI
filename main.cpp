@@ -10,6 +10,9 @@
 // pacman_movement wali file ko include kiya
 #include "pacman_movement.h"
 
+// pacman_draw wali file ko include kiya (animated chomping + death animation)
+#include "pacman_draw.h"
+
 int main()
 {
   unsigned mapW = (unsigned)baseMap[0].size();
@@ -60,12 +63,8 @@ int main()
 
     drawArena(window, uiOffset, animTime);
 
-    float r = (TILE_SIZE / 2.0f) * 0.9f;
-    sf::CircleShape pacBody(r);
-    pacBody.setOrigin(sf::Vector2f(r, r));
-    pacBody.setPosition(pacman.pos);
-    pacBody.setFillColor(pacman.color);
-    window.draw(pacBody);
+    // Animated chomping Pac-Man draw
+    drawPacman(window, pacman.pos, pacman.color, pacman.currentDir, animTime);
 
     window.display();
   }
