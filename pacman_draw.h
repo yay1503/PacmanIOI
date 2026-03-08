@@ -1,15 +1,7 @@
 #pragma once
-// ─────────────────────────────────────────────
-//  pacman_draw.h
-//  Pac-Man normal drawing and death animation.
-//  WEEK 3-4: Player draw subsystem
-// ─────────────────────────────────────────────
 
 #include "globals.h"
 
-// ─────────────────────────────────────────────
-//  Draw Pac-Man (animated chomping)
-// ─────────────────────────────────────────────
 inline void drawPacman(sf::RenderWindow &window, sf::Vector2f pos,
                        sf::Color color, Direction dir, float animTime) {
   float radius = TILE_SIZE / 2.0f * 0.8f;
@@ -41,12 +33,6 @@ inline void drawPacman(sf::RenderWindow &window, sf::Vector2f pos,
   window.draw(shape);
 }
 
-// ─────────────────────────────────────────────
-//  Death animation  (Week 7: Polish)
-//  Phase 1: flash white/yellow
-//  Phase 2: mouth opens wide + slight shrink
-//  Phase 3: tiny spark vanish
-// ─────────────────────────────────────────────
 inline void drawPacmanDeath(sf::RenderWindow &window, sf::Vector2f pos,
                             sf::Color color, float progress) {
   float radius = TILE_SIZE / 2.0f * 0.8f;
