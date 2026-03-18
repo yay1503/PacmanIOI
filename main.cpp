@@ -23,6 +23,9 @@
 // sounds wali file ko include kiya (procedural audio)
 #include "sounds.h"
 
+// victory_screen wali file ko include kiya (end screen UI)
+#include "victory_screen.h"
+
 int main() {
   unsigned mapW = (unsigned)baseMap[0].size();
   unsigned mapH = (unsigned)baseMap.size();
@@ -92,87 +95,122 @@ int main() {
     powerups = spawnPowerups();
   };
 
-  resetGame();
-  sf::Clock clock;
+  // Outer loop: supports Play Again functionality
+  bool keepPlaying = true;
+  while (keepPlaying) {
+    resetGame();
+    sf::Clock clock;
+    GameState gameState = GameState::Playing;
+    float animTime = 0.f;
 
-  while (window.isOpen()) {
-    float dt = clock.restart().asSeconds();
-    if (dt > 0.1f)
-      dt = 0.1f;
-    static float animTime = 0.f;
-    animTime += dt;
+    // Inner loop: the actual game
+    while (window.isOpen() && gameState == GameState::Playing) {
+      float dt = clock.restart().asSeconds();
+      if (dt > 0.1f)
+        dt = 0.1f;
+      animTime += dt;
 
-    while (const std::optional<sf::Event> ev = window.pollEvent())
-      if (ev->is<sf::Event::Closed>())
-        window.close();
+      while (const std::optional<sf::Event> ev = window.pollEvent())
+        if (ev->is<sf::Event::Closed>())
+          window.close();
 
-    // Take inputs for pacman
-    handlePacmanInput(pacman);
-    moveEntity(pacman, PACMAN_SPEED, false, dt, uiOffset, mapW);
+      // Take inputs for pacman
+      handlePacmanInput(pacman);
+      moveEntity(pacman, PACMAN_SPEED, false, dt, uiOffset, mapW);
 
-    // Collect orbs that Pac-Man touches and play blop sound
-    size_t orbsBefore = orbs.size();
-    collectOrbs(orbs, pacman.pos, score);
-    if (orbs.size() < orbsBefore && sBlop.getStatus() != sf::Sound::Status::Playing)
-      sBlop.play();
+      // Collect orbs that Pac-Man touches and play blop sound
+      size_t orbsBefore = orbs.size();
+      collectOrbs(orbs, pacman.pos, score);
+      if (orbs.size() < orbsBefore && sBlop.getStatus() != sf::Sound::Status::Playing)
+        sBlop.play();
 
-    // Powerup pickup logic
-    for (auto &pu : powerups) {
-      if (!pu.active) continue;
-      if (calcDist(pacman.pos, pu.pos) < TILE_SIZE * 0.7f) {
-        pu.active = false;
-        switch (pu.type) {
-          case PowerupType::Health:
-            score += 50;  // bonus points
-            sPow.play();
-            break;
-          case PowerupType::Power:
-            hasPower = true;
-            powerTimer = 8.0f;  // 8 sec power boost
-            sPow.play();
-            break;
-          case PowerupType::Shield:
-            hasShield = true;
-            shieldTimer = 10.0f;  // 10 sec shield
-            sShld.play();
-            break;
+      // Win condition: all orbs collected
+      if (orbs.empty()) {
+        gameState = GameState::GameWon;
+        sWin.play();
+        break;
+      }
+
+      // Powerup pickup logic
+      for (auto &pu : powerups) {
+        if (!pu.active) continue;
+        if (calcDist(pacman.pos, pu.pos) < TILE_SIZE * 0.7f) {
+          pu.active = false;
+          switch (pu.type) {
+            case PowerupType::Health:
+              score += 50;  // bonus points
+              sPow.play();
+              break;
+            case PowerupType::Power:
+              hasPower = true;
+              powerTimer = 8.0f;  // 8 sec power boost
+              sPow.play();
+              break;
+            case PowerupType::Shield:
+              hasShield = true;
+              shieldTimer = 10.0f;  // 10 sec shield
+              sShld.play();
+              break;
+          }
         }
       }
-    }
 
-    // Tick powerup timers
-    if (hasPower) { powerTimer -= dt; if (powerTimer <= 0.f) hasPower = false; }
-    if (hasShield) { shieldTimer -= dt; if (shieldTimer <= 0.f) hasShield = false; }
+      // Tick powerup timers
+      if (hasPower) { powerTimer -= dt; if (powerTimer <= 0.f) hasPower = false; }
+      if (hasShield) { shieldTimer -= dt; if (shieldTimer <= 0.f) hasShield = false; }
 
-    window.clear(sf::Color::Black);
+      window.clear(sf::Color::Black);
 
-    drawArena(window, uiOffset, animTime);
+      drawArena(window, uiOffset, animTime);
 
-    // Draw orbs
-    drawOrbs(window, orbs);
+      // Draw orbs
+      drawOrbs(window, orbs);
 
-    // Draw powerups
-    for (auto &pu : powerups) {
-      if (!pu.active) continue;
-      switch (pu.type) {
-        case PowerupType::Health: drawHealthPowerup(window, pu.pos, animTime); break;
-        case PowerupType::Power:  drawPowerPowerup(window, pu.pos, animTime);  break;
-        case PowerupType::Shield: drawShieldPowerup(window, pu.pos, animTime); break;
+      // Draw powerups
+      for (auto &pu : powerups) {
+        if (!pu.active) continue;
+        switch (pu.type) {
+          case PowerupType::Health: drawHealthPowerup(window, pu.pos, animTime); break;
+          case PowerupType::Power:  drawPowerPowerup(window, pu.pos, animTime);  break;
+          case PowerupType::Shield: drawShieldPowerup(window, pu.pos, animTime); break;
+        }
       }
+
+      // Animated chomping Pac-Man draw
+      drawPacman(window, pacman.pos, pacman.color, pacman.currentDir, animTime);
+
+      // Draw shield aura around Pac-Man if active
+      if (hasShield)
+        drawShieldAura(window, pacman.pos, animTime);
+
+      // Draw score HUD
+      drawScore(window, font, score);
+
+      window.display();
     }
 
-    // Animated chomping Pac-Man draw
-    drawPacman(window, pacman.pos, pacman.color, pacman.currentDir, animTime);
+    // Show victory / game-over screen if window is still open
+    if (window.isOpen()) {
+      bool won = (gameState == GameState::GameWon);
+      EndScreen endScreen(font, won);
+      EndChoice choice = endScreen.run(window);
 
-    // Draw shield aura around Pac-Man if active
-    if (hasShield)
-      drawShieldAura(window, pacman.pos, animTime);
-
-    // Draw score HUD
-    drawScore(window, font, score);
-
-    window.display();
+      if (choice == EndChoice::PlayAgain) {
+        // Re-open the window if it was closed by the end screen
+        if (!window.isOpen()) {
+          window.create(sf::VideoMode(sf::Vector2u(
+                            mapW * (unsigned)TILE_SIZE,
+                            mapH * (unsigned)TILE_SIZE + (unsigned)uiOffset)),
+                        "Pac-Man Core");
+        }
+        continue;  // restart the outer loop
+      } else {
+        keepPlaying = false;
+      }
+    } else {
+      keepPlaying = false;
+    }
   }
+
   return 0;
 }
-
