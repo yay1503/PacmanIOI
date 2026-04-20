@@ -160,3 +160,12 @@ main.cpp
 ## 📝 License
 
 This project is for educational / IOI competition purposes.
+
+## Team Members:
+
+1.Jay Patil
+2.Pranjal Gupta
+3.Ramnani Jayesh
+4.Krish Kundariya
+5.Abhijay Lilariya
+6.Hanna Sosa
